@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра: Попади по мишени</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .mode-button {
+            flex: 1;
+            padding: 15px 20px;
+            border: 3px solid #667eea;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .mode-button:hover {
+            background: #f0f0f0;
+        }
+
+        .mode-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .mode-button .mode-title {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        .mode-button .mode-description {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .score {
+            color: #4CAF50;
+        }
+
+        .timer {
+            color: #FF5722;
+        }
+
+        .interval {
+            color: #2196F3;
+        }
+
+        #gameArea {
+            width: 600px;
+            height: 600px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 4px solid #333;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto 20px;
+            cursor: crosshair;
+        }
+
+        .target {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.1s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .target::before {
+            content: '';
+            position: absolute;
+            width: 40%;
+            height: 40%;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .target::after {
+            content: '';
+            position: absolute;
+            width: 15%;
+            height: 15%;
+            background: #333;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .target:hover {
+            transform: scale(1.1);
+        }
+
+        .target-timer {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .controls {
+            text-align: center;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .game-over {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: #fff3e0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .game-over.show {
+            display: block;
+        }
+
+        .game-over h2 {
+            color: #ff5722;
+            margin-bottom: 10px;
+        }
+
+        .final-score {
+            font-size: 2em;
+            color: #4CAF50;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .hit-effect {
+            position: absolute;
+            pointer-events: none;
+            font-size: 2em;
+            font-weight: bold;
+            color: #4CAF50;
+            animation: hitAnimation 0.5s ease-out;
+        }
+
+        @keyframes hitAnimation {
+            0% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.5) translateY(-30px);
+            }
+        }
+
+        @media (max-width: 700px) {
+            #gameArea {
+                width: 100%;
+                height: 0;
+                padding-bottom: 100%;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Попади по мишени</h1>
+        
+        <div class="mode-selector">
+            <div class="mode-button active" id="classicMode" onclick="selectMode('classic')">
+                <div class="mode-title">🎯 Классический</div>
+                <div class="mode-description">Одна мишень за раз</div>
+            </div>
+            <div class="mode-button" id="mayhemMode" onclick="selectMode('mayhem')">
+                <div class="mode-title">🔥 Mayhem</div>
+                <div class="mode-description">Множество мишеней</div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-item">
+                <div class="info-label">Счет</div>
+                <div class="info-value score" id="score">0</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Время</div>
+                <div class="info-value timer" id="timer">60</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Интервал</div>
+                <div class="info-value interval" id="interval">1000</div>
+            </div>
+        </div>
+
+        <div class="game-over" id="gameOver">
+            <h2>Игра окончена!</h2>
+            <p id="gameOverReason"></p>
+            <div class="final-score" id="finalScore">0</div>
+            <p>Отличный результат! 🎉</p>
+        </div>
+
+        <div id="gameArea"></div>
+
+        <div class="controls">
+            <button id="startBtn" onclick="startGame()">Начать игру</button>
+        </div>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const intervalDisplay = document.getElementById('interval');
+        const startBtn = document.getElementById('startBtn');
+        const gameOverDiv = document.getElementById('gameOver');
+        const gameOverReason = document.getElementById('gameOverReason');
+        const finalScoreDisplay = document.getElementById('finalScore');
+
+        let score = 0;
+        let gameTime = 60;
+        let spawnInterval = 1000; // начальный интервал в миллисекундах
+        let gameActive = false;
+        let gameTimer;
+        let spawnTimer;
+        let targets = [];
+        let gameMode = 'classic'; // 'classic' или 'mayhem'
+
+        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
+        const minSize = 40;
+        const maxSize = 100;
+        const maxTargets = 5;
+        const targetLifetime = 3000; // 3 секунды на каждую мишень
+
+        function selectMode(mode) {
+            if (gameActive) return; // Нельзя менять режим во время игры
+            
+            gameMode = mode;
+            
+            // Обновление кнопок
+            document.getElementById('classicMode').classList.remove('active');
+            document.getElementById('mayhemMode').classList.remove('active');
+            
+            if (mode === 'classic') {
+                document.getElementById('classicMode').classList.add('active');
+            } else {
+                document.getElementById('mayhemMode').classList.add('active');
+            }
+        }
+
+        function startGame() {
+            // Сброс игры
+            score = 0;
+            gameTime = 60;
+            spawnInterval = 1000;
+            gameActive = true;
+            targets = [];
+            
+            // Очистка поля
+            gameArea.innerHTML = '';
+            gameOverDiv.classList.remove('show');
+            
+            // Обновление дисплеев
+            updateDisplay();
+            
+            // Отключение кнопки старта
+            startBtn.disabled = true;
+            startBtn.textContent = 'Игра идет...';
+            
+            // Запуск таймеров
+            gameTimer = setInterval(updateGameTimer, 1000);
+            spawnTarget();
+            scheduleNextSpawn();
+        }
+
+        function updateGameTimer() {
+            gameTime--;
+            timerDisplay.textContent = gameTime;
+            
+            if (gameTime <= 0) {
+                endGame('Время вышло!');
+            }
+        }
+
+        function scheduleNextSpawn() {
+            if (!gameActive) return;
+            
+            // В классическом режиме не создаем автоматически новые мишени
+            if (gameMode === 'classic') return;
+            
+            spawnTimer = setTimeout(() => {
+                if (gameActive) {
+                    spawnTarget();
+                    scheduleNextSpawn();
+                }
+            }, spawnInterval);
+        }
+
+        function spawnTarget() {
+            const maxTargetsForMode = gameMode === 'classic' ? 1 : maxTargets;
+            
+            if (!gameActive || targets.length >= maxTargetsForMode) return;
+            
+            const size = Math.random() * (maxSize - minSize) + minSize;
+            const maxX = gameArea.clientWidth - size;
+            const maxY = gameArea.clientHeight - size;
+            const x = Math.random() * maxX;
+            const y = Math.random() * maxY;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            const target = document.createElement('div');
+            target.className = 'target';
+            target.style.width = size + 'px';
+            target.style.height = size + 'px';
+            target.style.left = x + 'px';
+            target.style.top = y + 'px';
+            target.style.background = `radial-gradient(circle, ${color}, ${adjustColor(color, -30)})`;
+            
+            // Таймер для мишени
+            const timerElement = document.createElement('div');
+            timerElement.className = 'target-timer';
+            timerElement.textContent = '3.0';
+            target.appendChild(timerElement);
+            
+            // Объект мишени
+            const targetObj = {
+                element: target,
+                timerElement: timerElement,
+                timeLeft: targetLifetime,
+                interval: null
+            };
+            
+            // Обновление таймера мишени
+            targetObj.interval = setInterval(() => {
+                targetObj.timeLeft -= 100;
+                timerElement.textContent = (targetObj.timeLeft / 1000).toFixed(1);
+                
+                if (targetObj.timeLeft <= 0) {
+                    endGame('Время на мишень истекло!');
+                }
+            }, 100);
+            
+            target.addEventListener('click', () => hitTarget(targetObj));
+            
+            gameArea.appendChild(target);
+            targets.push(targetObj);
+        }
+
+        function hitTarget(targetObj) {
+            if (!gameActive) return;
+            
+            // Увеличение счета
+            score++;
+            updateDisplay();
+            
+            // Эффект попадания
+            showHitEffect(targetObj.element);
+            
+            // Удаление мишени
+            clearInterval(targetObj.interval);
+            targetObj.element.remove();
+            targets = targets.filter(t => t !== targetObj);
+            
+            // Уменьшение интервала появления
+            spawnInterval = Math.max(200, spawnInterval - 50);
+            intervalDisplay.textContent = spawnInterval;
+            
+            if (gameMode === 'classic') {
+                // В классическом режиме немедленно создаем новую мишень после попадания
+                setTimeout(() => {
+                    spawnTarget();
+                }, 100);
+            } else {
+                // В режиме mayhem перезапускаем таймер для создания следующей мишени
+                clearTimeout(spawnTimer);
+                setTimeout(() => {
+                    spawnTarget();
+                    scheduleNextSpawn();
+                }, 100);
+            }
+        }
+
+        function showHitEffect(targetElement) {
+            const rect = targetElement.getBoundingClientRect();
+            const gameRect = gameArea.getBoundingClientRect();
+            
+            const effect = document.createElement('div');
+            effect.className = 'hit-effect';
+            effect.textContent = '+1';
+            effect.style.left = (rect.left - gameRect.left + rect.width / 2) + 'px';
+            effect.style.top = (rect.top - gameRect.top + rect.height / 2) + 'px';
+            
+            gameArea.appendChild(effect);
+            
+            setTimeout(() => effect.remove(), 500);
+        }
+
+        function endGame(reason) {
+            gameActive = false;
+            
+            // Остановка таймеров
+            clearInterval(gameTimer);
+            clearTimeout(spawnTimer);
+            
+            // Очистка всех мишеней
+            targets.forEach(t => {
+                clearInterval(t.interval);
+                t.element.remove();
+            });
+            targets = [];
+            
+            // Показ результата
+            gameOverReason.textContent = reason;
+            finalScoreDisplay.textContent = score;
+            gameOverDiv.classList.add('show');
+            
+            // Включение кнопки старта
+            startBtn.disabled = false;
+            startBtn.textContent = 'Играть снова';
+        }
+
+        function updateDisplay() {
+            scoreDisplay.textContent = score;
+            timerDisplay.textContent = gameTime;
+            intervalDisplay.textContent = spawnInterval;
+        }
+
+        function adjustColor(color, amount) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+            const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amount));
+            const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount));
+            return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+        }
+    </script>
+</body>
+</html>
